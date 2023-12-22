@@ -1,6 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// ignore: must_be_immutable
 class BlackboardItem extends StatelessWidget {
   DateTime cdate;
   DateTime enddate;
@@ -39,7 +41,7 @@ class BlackboardItem extends StatelessWidget {
                   if(imgpost) const SizedBox(
                     height: 10,
                   ),
-                  if(msg.isNotEmpty) Text(msg, style: TextStyle(color: Colors.white, fontSize: 14),),
+                  if(msg.isNotEmpty) Text( msg, style: TextStyle(color: Colors.white, fontSize: 14),),
                   const SizedBox(height: 25),
                 ]),
               ),

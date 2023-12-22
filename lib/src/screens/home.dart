@@ -1,6 +1,13 @@
-import 'package:digital_blackboard/src/bloc/item_bloc.dart';
+import 'dart:io';
+
+import 'package:digital_blackboard/src/bloc/blackboard_bloc.dart';
+import 'package:digital_blackboard/src/models/bbitem.dart';
+import 'package:digital_blackboard/src/screens/addItemDialog.dart';
 import 'package:digital_blackboard/src/screens/blackboardItem.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key, required this.title});
@@ -12,7 +19,13 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-
+  BlackBoardBloc? _bbBloc;
+  @override
+  void initState() {
+    _bbBloc = BlackBoardBloc();
+    _bbBloc!.add(BlackBoardInitEvent());
+    super.initState();
+  }
   @override
     Widget build(BuildContext context) {
     return Scaffold(
@@ -24,16 +37,48 @@ class _HomeState extends State<Home> {
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
-                itemCount: 20,
-                itemBuilder: (context, index) {
-                  int listnr = index +1;
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: BlackboardItem(cdate: DateTime.now(), title: 'Test ' + listnr.toString(),msg: 'hshshshshshs dco donlioe ijdoide3ln jdlsipid', enddate: DateTime.now(), author: 'Sven Wahl-Schwarz', imgpost: true, imgSrc: "https://images.pexels.com/photos/2899097/pexels-photo-2899097.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",)
-                  );
-                }
-                ),
+              child: RefreshIndicator(
+                color: Colors.blueGrey,
+                semanticsValue: 'Aktuallisieren!',
+
+                onRefresh: () {
+                  _bbBloc!.add(BlackBoardGetAllItemsEvent());
+                  return Future(() => null);
+                  },
+                child: BlocConsumer<BlackBoardBloc,BlackBoardState>(
+                  bloc: _bbBloc,
+                  listener: (context, state) {
+                    
+                  },
+                  builder: (context, state) {
+                    if (state is BlackBoardLoadingState) {
+                      return const Center(child: CircularProgressIndicator(
+                        color: Colors.blueGrey,
+                      ));
+                    }
+                    if (state is BlackBoardLoadedState) {
+                      print('hallo state' + state.resultList.length.toString());
+                      return ListView.builder(
+                        itemCount: state.resultList.length,
+                        itemBuilder: (context, index) {
+                          BBItem item = state.resultList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 26,right: 26,top: 26),
+                            child: BlackboardItem(
+                              cdate: item.cdate, 
+                              title: item.title, 
+                              enddate: DateTime.now(), 
+                              author: item.autor, 
+                              imgpost: item.imgpost, 
+                              imgSrc: item.img,
+                              msg: item.msg),
+                          );
+                        });
+                    }
+                    return Container();
+                  },
+                  )
+              ),
             ),
             Container(
               color: Colors.black,
@@ -43,80 +88,10 @@ class _HomeState extends State<Home> {
                   padding: const EdgeInsets.only(bottom: 24),
                   child: TextButton(
                     onPressed: () {
-                      DateTime? start;
-                      DateTime? end;
                       showDialog(
                       context: context,
                       builder: (BuildContext context) {
-                        return Dialog(
-                            backgroundColor: Colors.grey,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:BorderRadius.circular(18.0)),
-                  child: Container(
-                  constraints: const BoxConstraints(maxHeight: 550),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: ListView(children: [
-                            const Text('Neuer Eintrag', style: TextStyle(fontSize: 24),),
-                            const SizedBox(
-                              height: 60,
-                            ),
-                            const Text('Titel*'),
-                            TextField(),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            const Text('Message'),
-                            TextField(),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            const Text('Bild hinzufügen'),
-                            IconButton(onPressed: () {}, icon: const Icon(Icons.add_a_photo)),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            const Text('Startdatum'),
-                            TextField(
-                              keyboardType: TextInputType.none,
-                              onTap: () async {
-                                start = await showDatePicker(
-                                  helpText: 'wählen Sie ein Startdatum!',
-                                  context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 60)));
-                              },
-                            ),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            const Text('Enddatum'),
-                            TextField(
-                              keyboardType: TextInputType.none,
-                              onTap: () async {
-                                end = await showDatePicker(
-                                  helpText: 'wählen Sie ein Enddatumhjhjh!',
-                                  context: context, initialDate: start!, firstDate: start!, lastDate: DateTime.now().add(const Duration(days: 120)));
-                              },
-                            ),
-                            const SizedBox(
-                              height: 40,
-                            ),
-                            const Text('Autor'),
-                            TextField(),
-                            const SizedBox(
-                              height: 16,
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                TextButton(onPressed: () {Navigator.pop(context);}, child: Text('Abbrechen')),
-                                TextButton(onPressed: () {}, child: Text('Absenden'))
-                              ],
-                            )
-                      ],)
-                    ),
-                  ),
-                        );
+                        return const AddItemDialogState();
                     });
                     },
                     child: const Text('Post new one!', style: TextStyle(color: Colors.white, fontSize: 33),),
